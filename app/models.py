@@ -11,7 +11,7 @@ class Cars(db.Model):
     year = db.Column(db.String(80))
     transmission = db.Column(db.String(80))
     car_type = db.Column(db.String(80))
-    price = db.Column(db.Numeric(10000000,2))
+    price = db.Column(db.Float())
     photo = db.Column(db.String(255))
     user_id = db.Column(db.Integer, foreign_key=True)
     
@@ -34,9 +34,7 @@ class Favourites(db.Model):
     car_id = db.Column(db.Integer, foreign_key=True)
     user_id = db.Column(db.Integer, foreign_key=True)
     
-
-    def __init__(self,user_id, car_id, id):
-        self.id = id
+    def __init__(self,user_id, car_id):
         self.car_id = car_id
         self.user_id = user_id
 
@@ -54,7 +52,7 @@ class Users(db.Model):
 
     def __init__(self, username, password, name, email, location, biography, photo, date_joined):
         self.username = username
-        self.password = password
+        self.password = generate_password_hash(password,method='pbkdf2:sha256')
         self.name = name
         self.email = email
         self.location = location

@@ -7,7 +7,6 @@ const app = Vue.createApp({
         }
     }
 });
-
 app.component('app-header', {
     name: 'AppHeader',
     template: `
@@ -30,10 +29,43 @@ app.component('app-header', {
             <li class="nav-item active">
             <router-link class="nav-link" to="/login">Login <span class="sr-only">(current)</span></router-link>
             </li>
+
+            <li class="nav-item active">
+            <router-link class="nav-link" to="/explore">Explore <span class="sr-only">(current)</span></router-link>
+            </li>
+            <li class="nav-item active">
+            <router-link class="nav-link" to="/cars/new">Add Car <span class="sr-only">(current)</span></router-link>
+            </li>
+            <li class="nav-item active">
+            <router-link class="nav-link" to="/logout">Logout<span class="sr-only">(current)</span></router-link>
+            </li>
+            <li class="nav-item active">
+            <router-link class="nav-link" to="/">Logout<span class="sr-only">(current)</span></router-link>
+            </li>
+            <li class="nav-item active">
+            <router-link class="nav-link" @click="profile_page()" v-bind:to="'/users/' + userid">View Profile <span class="sr-only">(current)</span></router-link>
+            </li>
       </ul>
       </div>
     </nav>
-    `
+    `, 
+    data: function(){
+        return {
+            userid: 0
+        }
+    },
+    methods:{
+        profile_page(){
+            // let router = this.$router; 
+            // let user = JSON.parse(localStorage.getItem('id'));
+            // router.push(`/users/${user.id}`);
+            location.reload();
+        }
+    },
+    mounted: function(){
+        let self=this;
+        self.userid=JSON.parse(localStorage.getItem('id'));
+    }
 });
 
 app.component('app-footer', {
@@ -79,13 +111,20 @@ const Home = {
 };
 
 const login = {
-    name: 'login',
+    name: 'loginForm',
     template: `
     <body style="background-color:#f3f4f6;padding-top: 5rem; height: 100vh; margin: 0; ">
         <div class="d-flex align-items-center justify-content-center h-100" style="margin-top:-120px;" >
             <div class="">
             <h2 class="font-weight-bold text-center" >Login to your account</h2>
             <br>
+            <form @submit.prevent="loginUser" id="loginForm">
+                <div id = "message">
+                    <p class="alert alert-success" v-if="message === 'success'" >{{success}}</p>
+                    <ul class="alert alert-danger" v-if="message === 'error'" >
+                        <li v-for="errors in errors" > {{errors}}</li>
+                    </ul> 
+                </div>
                 <div class="card p-3 mb-5" style="width: 30rem; border-radius:10px;">
                     <div class="card-body">
                     <div class="form-group">
@@ -95,31 +134,124 @@ const login = {
                     </div>
                     <div class="form-group">
                         <label class="font-weight-bold" for="password">Password</label>
-                        <input name="password" style="height:50px;  border-radius:10px; " class="form-control " type="password">
+                        <input name="password" autocomplete="on"  style="height:50px;  border-radius:10px; " class="form-control " type="password">
                     </div>
                     <br>
                     <button type="submit" style="height:40px; border-radius:10px;" class="btn btn-success w-100">Login</button>
                     </div>
                 </div>
+            </form>
             </div>
         </div>
     </body>
 
     `,
     data() {
-        return {}
+        return {
+            message: '',
+            errors: [],
+            success:[]
+        }
+    },
+    methods: {
+        loginUser: function(){
+            let loginForm= document.getElementById('loginForm');
+            let router =this.$router;
+            let form_data=new FormData(loginForm);
+            let self=this;
+            fetch("/api/auth/login", {
+                method: "POST",
+                body: form_data,
+                headers: {
+                   
+                    'X-CSRFToken': token
+                },
+                credentials: 'same-origin'
+            })
+            .then(function (response) {
+                // console.log(response)
+                return response.json();
+            })
+            .then(function (jsonResponse) {
+                if ('message' in jsonResponse ){
+                    let jwt_token=jsonResponse.message.token
+                    localStorage.setItem("token",jwt_token)
+                    localStorage.setItem("id",jsonResponse.message.id)
+                    self.success =  jsonResponse.message.message;
+                    self.message = 'success';
+                    router.push('/explore')
+                    console.log(jsonResponse)
+                } else if ('errors' in jsonResponse ){
+                    console.log(jsonResponse)
+                    self.errors = jsonResponse.errors.errors;
+                    self.message = 'error';
+                }
+            })
+            .catch(function (error) {
+                console.log(error);
+            });
+        }
     }
 };
 
+
+const logout = {
+    name: 'logout',
+    template: `
+    `,
+    data() {
+        return {
+
+        }
+    },
+    mounted: function(){
+        fetch("/api/auth/logout", {
+            method: "GET",
+            headers: {
+                'X-CSRFToken': token,
+                'Authorization': "Bearer "+ localStorage.getItem("token")
+            },
+            credentials: 'same-origin'
+        })
+        .then(function (response) {
+            return response.json();
+        })
+        .then(function (jsonResponse) {
+            if ('message' in jsonResponse ){
+                localStorage.removeItem('token');
+                localStorage.removeItem('id');
+                self.success =  jsonResponse.message.message;
+                self.message = 'success';
+                router.push('login');
+                console.log(jsonResponse);
+            } else if ('errors' in jsonResponse ){
+                console.log(jsonResponse);
+                self.errors = jsonResponse.errors.errors;
+                self.message = 'error';
+            }
+        })
+        .catch(function (error) {
+            console.log(error);
+        });
+    },
+    methods: {}
+};
+
 const register = {
-    name: 'register',
+    name: 'registerForm',
     template: `
     <body style="background-color:#f3f4f6;padding-top: 6rem; height: 100vh; ">
         <div class="d-flex align-items-center justify-content-center h-100" style="margin-top:0px;" >
             <div class="">
                 <h2 class="font-weight-bold " >Register New User</h2>
                 <br>
-                <form @submit.prevent="register" id="register">
+                <form @submit.prevent="registerUser" id="registerForm">
+                <div id = "message">
+                    <p class="alert alert-success" v-if="message === 'success'" >{{success}}</p>
+                    <ul class="alert alert-danger" v-if="message === 'error'" >
+                        <li v-for="errors in errors" > {{errors}}</li>
+                    </ul> 
+                </div>
                     <div class="card p-4 mb-5" style="width: 55rem; border-radius:10px;">
                         <div class="card-body">
                             <div class="form-row">
@@ -129,7 +261,7 @@ const register = {
                                 </div>
                                 <div class="form-group col-md-6">
                                     <label class="font-weight-bold" for="password">Password</label>
-                                    <input name="password" type="password" class="form-control" style="height:50px; width:370px; border-radius:10px;">
+                                    <input name="password" type="password" autocomplete="on" class="form-control" style="height:50px; width:370px; border-radius:10px;">
                                 </div>
                             </div>
                             <div class="form-row">
@@ -168,11 +300,502 @@ const register = {
 
     `,
     data() {
-        return {}
+        return {
+            message: '',
+            errors: [],
+            success:[]
+        }
+    },
+    methods: {
+        registerUser: function(){
+            let registerForm= document.getElementById('registerForm');
+            let router =this.$router;
+            let form_data=new FormData(registerForm);
+            let self=this;
+            fetch("/api/register", {
+                method: "POST",
+                body: form_data,
+                headers: {
+                    'X-CSRFToken': token
+                },
+                credentials: 'same-origin'
+            })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (jsonResponse) {
+                if ('message' in jsonResponse ){
+                    self.success = 'Registration Succesful!';
+                    self.message = 'success';
+                    router.push('login')
+                    console.log(jsonResponse)
+                } else if ('errors' in jsonResponse ){
+                    console.log(jsonResponse)
+                    self.errors = jsonResponse.errors.errors;
+                    self.message = 'error';
+                }
+            })
+            .catch(function (error) {
+                console.log(error);
+            });
+        }
+    }
+};
+
+const explore = {
+    name: 'explore',
+    template: `
+    <body style="background-color:#f3f4f6;padding-top: 5rem; height: 100vh; margin: 0; ">
+        <div class="d-flex align-items-center justify-content-center h-100" style="margin-top:-320px;" >
+            <div class="">
+            <h2 class="font-weight-bold" style="font-size:40px;">Explore</h2>
+            <br>
+            <form @submit.prevent="search" id="searchForm">
+                <div id = "message">
+                    <p class="alert alert-success" v-if="message === 'success'" >{{success}}</p>
+                    <ul class="alert alert-danger" v-if="message === 'error'" >
+                        <li v-for="errors in errors" > {{errors}}</li>
+                    </ul> 
+                </div>
+                <div class="card p-3  mb-4" style="width: 65rem; border-radius:10px;">
+                    <div class="card-body">
+                    <div class="form-row ">
+                    <div class="form-group col">
+                        <label  class="font-weight-bold" for="make2">Make</label>
+                        <input name="make2" id="make2" type="text" class="form-control " style="height:50px; width:350px; margin-right:20px; border-radius:10px;">
+                    </div>
+                    <div class="form-group col">
+                        <label class="font-weight-bold" for="model2">Model</label>
+                        <input name="model2" type="text" class="form-control" style="height:50px; width:350px; margin-right:20px; border-radius:10px;">
+                    </div>
+                    <div class="form-group col " style="margin-top:30px;">
+                    <button type="submit"  style="height:50px; border-radius:10px;" class="btn btn-success w-100">Search</button>
+                    </div>
+                </div>
+                    <br>
+                    </div>
+                </div>
+            </form>
+            </div>
+         </div>
+         <div class="card-layout d-flex align-items-center  justify-content-center" style="margin-left:40px; margin-top:-290px;">
+            <div v-for="cars in cars.slice(-3)"  class="card mb-4 mr-4" style="width: 22rem;  border-radius:10px;">
+                <div class="h-100 w-100">
+                    <img v-bind:src="'/static/uploads/' + cars.photo" class="card-img-top" style="height: 15rem;" alt="Car Images"/>
+                </div>
+                <div class="card-body" style="height:12rem;">
+                    <div class="row">
+                        <h5 class="font-weight-bold card-title col">{{cars.year}} {{cars.make}}</h5> 
+                        <div >
+                            <span class="d-flex p-1 btn-success align-items-center justify-content-center" style="float:right;border-radius:10px; height:35px;" >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-tag mr-1" viewBox="0 0 16 16">
+                                <path d="M6 4.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm-1 0a.5.5 0 1 0-1 0 .5.5 0 0 0 1 0z"/>
+                                <path d="M2 1h4.586a1 1 0 0 1 .707.293l7 7a1 1 0 0 1 0 1.414l-4.586 4.586a1 1 0 0 1-1.414 0l-7-7A1 1 0 0 1 1 6.586V2a1 1 0 0 1 1-1zm0 5.586 7 7L13.586 9l-7-7H2v4.586z"/>
+                                </svg> 
+                                <span> {{"$"+Number(cars.price).toLocaleString() }}</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <p class="card-text" style="margin-top:-10px;color:#95989e;">{{cars.model}}</p><br><br>
+                    <button style="height:40px; border-radius:10px;" @click="$router.push({ name: 'carDetails', params: { car_id: cars.id } })" class="btn btn-success w-100">View more details</button>                
+                </div>
+            </div>
+        </div>    
+    </body>
+    `,
+    data() {
+        return {
+            message: '',
+            errors: [],
+            success:[],
+            cars:[]
+        }
+    },
+    methods: {
+        search: function(){
+            let searchForm= document.getElementById('searchForm');
+            let router =this.$router;
+            let form_data=new FormData(searchForm);
+            let self=this;
+            fetch("/api/search", {
+                method: "GET",
+                headers: {
+                    'X-CSRFToken': token,
+                    Authorization: 'Bearer ' + localStorage.getItem('token')
+    
+                },
+                credentials: 'same-origin'
+            })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (jsonResponse) {
+                if ('data' in jsonResponse ){
+                    // self.success =  jsonResponse.message.message;
+                    // self.message = 'success';
+                   
+                    self.cars=jsonResponse.data
+                    console.log(jsonResponse.data)
+                    console.log( document.getElementById("make2").value)
+                } else if ('errors' in jsonResponse ){
+                    console.log(jsonResponse)
+                    // self.errors = jsonResponse.errors.errors;
+                    // self.message = 'error';
+                }
+            })
+            .catch(function (error) {
+                console.log(error);
+            });
+        }
+
+    },
+    mounted: function(){
+        let self=this;
+        fetch("/api/cars", {
+            method: "GET",
+            headers: {
+                'X-CSRFToken': token,
+                Authorization: 'Bearer ' + localStorage.getItem('token')
+
+            },
+            credentials: 'same-origin'
+        })
+        .then(function (response) {
+            return response.json();
+        })
+        .then(function (jsonResponse) {
+            if ('data' in jsonResponse ){
+                // self.success =  jsonResponse.message.message;
+                // self.message = 'success';
+                self.cars=jsonResponse.data
+                console.log(jsonResponse)
+            } else if ('errors' in jsonResponse ){
+                console.log(jsonResponse)
+                // self.errors = jsonResponse.errors.errors;
+                // self.message = 'error';
+            }
+        })
+        .catch(function (error) {
+            console.log(error);
+        });
     }
 };
 
 
+
+const getCarDetails = {
+    name: 'carDetials',
+    template: `
+    <body style="background-color:#f3f4f6;padding-top: 6rem; height: 100vh; ">
+    <div class="d-flex align-items-center justify-content-center h-100" style="margin-top:-120px;">
+        <div style="width: 1700px;">
+            <div class="" style="margin-top:100px;" >
+                <div class="row g-0 no-gutters justify-content-center ">
+                <div class="col-md-3  rounded" >
+                    <img v-bind:src="'/static/uploads/' + cars.photo" class="card-img-top h-100" alt="Car Images"/>
+                </div>
+                <div class="col-md-4 pr-3 bg-white  rounded" >
+                    <div class="card-body ">
+
+                    <div class="card-body">
+                    <h2 class="card-title font-weight-bold">{{cars.year}} {{cars.make}}</h2>
+                    <p class="card-text font-weight-bold" style="color:#95989e; font-size:25px; margin-top:-10px;">{{cars.model}}</p>
+                    <p class="card-text" style="color:#95989e;">{{cars.description}}</p>
+                </div>
+                <div class="row">
+                    <span class="d-flex col">
+                        <p class="mr-5 ml-3" style="color:#95989e;">Color </p>
+                        <p class="font-weight-bold">{{cars.colour}}</p>
+                    </span>
+                    <span class="d-flex col">
+                        <p class="mr-5" style="color:#95989e;">Body Type </p>
+                        <p class="font-weight-bold">{{cars.car_type}}</p>
+                    </span>
+                </div>
+
+                <div class="row">
+                    <span class="d-flex col">
+                        <p class="mr-5 ml-3 " style="color:#95989e;">Price </p>
+                        <p class="font-weight-bold">{{"$"+Number(cars.price).toLocaleString() }}</p>
+                    </span>
+                    <span class="d-flex col">
+                        <p class="mr-4" style="color:#95989e;">Transmission</p>
+                        <p class="font-weight-bold">{{cars.transmission}}</p>
+                    </span>
+                </div>
+          <br><br><br><br><br><br>
+          <button class="btn btn-success mt-4" type="submit">Email Owner</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+    </body>
+
+    `,
+    data() {
+        return {
+            message: '',
+            errors: [],
+            cars:[],
+            success:[]
+           
+        }
+    },
+    mounted: function(){
+        let router =this.$router;
+        let car_id = this.$route.params.car_id;
+        let self=this;
+
+        fetch("/api/cars/"+car_id, {
+            method: "GET",
+            headers: {
+                'X-CSRFToken': token,
+                Authorization: 'Bearer ' + localStorage.getItem('token')
+            },
+            credentials: 'same-origin'
+        })
+        .then(function (response) {
+            return response.json();
+        })
+        .then(function (jsonResponse) {
+            if ('data' in jsonResponse ){
+                // self.success =  jsonResponse.message.message;
+                // self.message = 'success';
+                self.cars=jsonResponse.data
+                console.log(jsonResponse)
+            } else if ('errors' in jsonResponse ){
+                console.log(jsonResponse)
+                // self.errors = jsonResponse.errors.errors;
+                // self.message = 'error';
+            }
+        })
+        .catch(function (error) {
+            console.log(error);
+        });
+    }
+    
+};
+
+
+const addcars = {
+    name: 'carForm',
+    template: `
+    <body style="background-color:#f3f4f6;padding-top: 6rem; height: 100vh; ">
+        <div class="d-flex align-items-center justify-content-center h-100" style="margin-top:0px;" >
+            <div class="">
+                <h2 class="font-weight-bold " >Add New Car</h2>
+                <br>
+                <form @submit.prevent="registerCar" id="carForm">
+                <div id = "message">
+                    <p class="alert alert-success" v-if="message === 'success'" >{{success}}</p>
+                    <ul class="alert alert-danger" v-if="message === 'error'" >
+                        <li v-for="errors in errors" > {{errors}}</li>
+                    </ul> 
+                </div>
+                    <div class="card p-4 mb-5" style="width: 55rem; border-radius:10px;">
+                        <div class="card-body">
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label  class="font-weight-bold" for="make">Make</label>
+                                    <input name="make" type="text" class="form-control " style="height:50px; width:370px; border-radius:10px;">
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label class="font-weight-bold" for="model">Model</label>
+                                    <input name="model" type="text" class="form-control" style="height:50px; width:370px; border-radius:10px;">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label  class="font-weight-bold" for="colour">Colour</label>
+                                    <input name="colour" type="text" class="form-control" style="height:50px; width:370px; border-radius:10px;">
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label class="font-weight-bold" for="year">Year</label>
+                                    <input name="year" type="text" class="form-control" style="height:50px;  width:370px; border-radius:10px;">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label  class="font-weight-bold" for="price">Price</label>
+                                    <input name="price" type="number" class="form-control" style="height:50px; width:370px; border-radius:10px;">
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label  class="font-weight-bold" for="ctype">Car Type</label>
+                                    <select name="ctype" class="custom-select" style="height:50px; width:370px; border-radius:10px;">
+                                        <option value="SUV">SUV</option>
+                                        <option value="MPV">MPV</option>
+                                        <option value="Micro">Micro</option>
+                                        <option value="Hatchback">Hatchback</option>
+                                        <option value="Sedan">Sedan</option>
+                                        <option value="Wagon">Wagon</option>
+                                        <option value="Luxury">Luxury</option>
+                                        <option value="Antique">Antique</option>
+                                        <option value="Muscle">Muscle</option>
+                                        <option value="Electric">Electric </option>
+                                        <option value="Supercar"> Supercar</option>
+                                        <option value="Convertible">Convertible</option>
+                                        <option value="Coupe">Coupe</option>
+                                    </select>                                
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label  class="font-weight-bold" for="transmission">Transmission</label>
+                                    <select name="transmission" class="custom-select" style="height:50px; width:370px; border-radius:10px;">
+                                        <option value="Automatic">Automatic</option>
+                                        <option value="Manual">Manual</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group w-100">
+                                    <label  class="font-weight-bold" for="description">Description</label>
+                                    <textarea name="description" class="form-control w-100 " style="height:150px; border-radius:10px;"></textarea>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label  class="font-weight-bold" for="photo">Upload Photo</label>
+                                <input name="photo" class="form-control-file" type="file">
+                            </div><br>
+                            <button type="submit" style="height:45px; width:200px; border-radius:10px;" class="btn btn-success">Save</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </body>
+
+    `,
+    data() {
+        return {
+            message: '',
+            errors: [],
+            success:[]
+        }
+    },
+    methods: {
+        registerCar: function(){
+            let carForm= document.getElementById('carForm');
+            let router =this.$router;
+            let form_data=new FormData(carForm);
+            let self=this;
+            fetch("/api/cars", {
+                method: "POST",
+                body: form_data,
+                headers: {
+                    'X-CSRFToken': token,
+                    Authorization: 'Bearer ' + localStorage.getItem('token')
+                },
+                credentials: 'same-origin'
+            })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (jsonResponse) {
+                if ('message' in jsonResponse ){
+                    self.success =  jsonResponse.message.message;
+                    self.message = 'success';
+
+                    console.log(jsonResponse)
+                } else if ('errors' in jsonResponse ){
+                    console.log(jsonResponse)
+                    self.errors = jsonResponse.errors.errors;
+                    self.message = 'error';
+                }
+            })
+            .catch(function (error) {
+                console.log(error);
+            });
+        }
+    }
+};
+
+const profile = {
+    name: 'profile',
+    template: `
+    <body style="background-color:#f3f4f6;padding-top: 6rem; height: 100vh; ">
+        <div class="d-flex align-items-center justify-content-center h-100" style="margin-top:-220px;" >
+            <div>
+                <div class="card mb-3 pb-5" style="width: 900px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-3 p-2 pt-4 pl-4 mr-3">
+                            <img v-bind:src="'/static/uploads/' + user.photo" class="card-img-top "style="border-radius:50%; width:200px;height:200px;" alt="User Images"/>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card-body">
+                                <h2 class="card-title">{{user.name}}</h2>
+                                <p class="card-text font-weight-bold" style="color:#95989e; font-size:25px; margin-top:-10px;">@{{user.username}}</p>
+                                <p class="card-text" style="color:#95989e;">{{user.biography}}</p>
+                                <br>
+                                <div class="row">
+                                    <span class="d-flex col">
+                                        <p class="mr-5" style="color:#95989e;">Email </p>
+                                        <p class="font-weight-bold">{{user.email}}</p>
+                                    </span>
+                                    <span class="d-flex col">
+                                        <p class="mr-4" style="color:#95989e;">Location</p>
+                                        <p class="font-weight-bold">{{user.location}}</p>
+                                    </span>
+                                    <span class="d-flex col">
+                                        <p class="pr-3 mr-4" style="color:#95989e;">Joined</p>
+                                        <p class="font-weight-bold">{{user.date_joined}}</p>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+
+    `,
+    data() {
+        return {
+            message: '',
+            errors: [],
+            user:[],
+            success:[]
+           
+        }
+    },
+    mounted: function(){
+        let router =this.$router;
+        let user_id = this.$route.params.user_id;
+        let self=this;
+
+        fetch("/api/users/"+user_id, {
+            method: "GET",
+            headers: {
+                'X-CSRFToken': token,
+                Authorization: 'Bearer ' + localStorage.getItem('token')
+            },
+            credentials: 'same-origin'
+        })
+        .then(function (response) {
+            return response.json();
+        })
+        .then(function (jsonResponse) {
+            if ('data' in jsonResponse ){
+                // self.success =  jsonResponse.message.message;
+                // self.message = 'success';
+                self.user=jsonResponse.data
+                console.log(jsonResponse)
+            } else if ('errors' in jsonResponse ){
+                console.log(jsonResponse)
+                // self.errors = jsonResponse.errors.errors;
+                // self.message = 'error';
+            }
+        })
+        .catch(function (error) {
+            console.log(error);
+        });
+    }
+    
+};
 
 const NotFound = {
     name: 'NotFound',
@@ -191,7 +814,17 @@ const routes = [
     { path: "/", component: Home },
     // Put other routes here
     { path: "/login", component: login },
-    
+
+    { path: "/logout", component: logout },
+
+    { path: "/cars/:car_id",name:'carDetails', component: getCarDetails },
+
+    { path: "/users/:user_id",name:'profile', component: profile },
+
+    { path: "/explore", component: explore },
+
+    { path: "/cars/new", component: addcars },
+
     { path: "/register", component: register },
     // This is a catch all route in case none of the above matches
     { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFound }
