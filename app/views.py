@@ -15,7 +15,7 @@ from sqlalchemy.sql.expression import desc
 from app import app, db, login_manager
 from flask import request, jsonify, render_template,g
 from flask_login import login_user, logout_user, current_user, login_required
-from app.forms import  LoginForm, RegisterForm,carForm,searchForm
+from app.forms import  LoginForm, RegisterForm,carForm
 from app.models import Users,Cars,Favourites
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash
@@ -153,7 +153,7 @@ def addcars():
 @login_required
 def returncars():
     if request.method=="GET":
-        allcars=Cars.query.order_by(Cars.id).all()
+        allcars=Cars.query.order_by(desc(Cars.id)).all()
         data=[]
         for i in allcars:
             data.append({
@@ -175,45 +175,43 @@ def returncars():
 @requires_auth
 @login_required
 def search():
-    form=searchForm()
+    if request.method=="GET":
+        make=request.args.get('make')
+        model=request.args.get('model')
+        if not make and not model:
+            errors={
+                'errors':['No results found!']
+            }
+            return jsonify(errors=errors)
+        elif not make:
+            query=db.session.query(Cars).filter_by(model=model).all()
+        elif not model:
+            query=db.session.query(Cars).filter_by(make=make).all()
+        else:
+            query=db.session.query(Cars).filter(Cars.make==make, Cars.model==model).all()
+      
+        if query == None or query == []:
+            errors={
+                'errors':['No results found!']
+            }
+            return jsonify(errors=errors)
+        else:
+            data=[]
+            for i in query:
+                data.append({
+                    'id':i.id,
+                    'description':i.description,
+                    'year':i.year,
+                    'make':i.make,
+                    'model':i.model,
+                    'colour':i.colour,
+                    'transmission':i.transmission,
+                    'car_type':i.car_type,
+                    'price':i.price,
+                    'photo':i.photo,
+                    'user_id':i.user_id
+                })
 
-    # make=request.form['make2']
-    # make=form.make2.data
-    # model=form.model2.data
-    # modelsearch=Cars.query.filter(Cars.model.like("%make%"))
-    # makesearch=Cars.query.filter(Cars.make.like("%make"))
-    # data=[]
-
-    # for i in modelsearch:
-    #     data.append({
-    #         'id':i.id,
-    #         'description':i.description,
-    #         'year':i.year,
-    #         'make':i.make,
-    #         'model':i.model,
-    #         'colour':i.colour,
-    #         'transmission':i.transmission,
-    #         'car_type':i.car_type,
-    #         'price':i.price,
-    #         'photo':i.photo,
-    #         'user_id':i.user_id
-    #     })
-
-    for i in makesearch:
-        data.append({
-            'id':i.id,
-            'description':i.description,
-            'year':i.year,
-            'make':i.make,
-            'model':i.model,
-            'colour':i.colour,
-            'transmission':i.transmission,
-            'car_type':i.car_type,
-            'price':i.price,
-            'photo':i.photo,
-            'user_id':i.user_id
-            })
-        
     return jsonify(data=data)
 
 
@@ -235,7 +233,47 @@ def getcardetails(car_id):
             'user_id':cardata.user_id
         }
         return jsonify(data=data)
-    return  jsonify({'errors': 'Method Not Allowed'})
+    errors={
+        'errors': 'Method Not Allowed'
+        }
+    return  jsonify(errors)
+
+
+
+@app.route('/api/cars/<car_id>/favourite', methods=['POST'])
+def favorites(car_id):
+    if request.method == 'POST':
+        userid = current_user.id
+        fav_car = Favourites(car_id, userid) 
+        print(user_id)
+        print(car_id)
+        # cardata = db.session.query(Favourites).filter_by(user_id=32).first()
+        cardata=Favourites.query.filter(user_id=userid,car_id=car_id).all()
+
+        # query=db.session.query(Favourites).filter(Favourites.user_id==user_id, Favourites.car_id==car_id).all()
+        print(cardata)
+        # db.session.add(fav_car) 
+        # db.session.commit()
+        data=[]
+        for i in cardata:
+            data.append({
+                    'id':i.user_id,
+                    'carid':i.car_id,
+                })
+
+
+        # data={
+        #     "car_id": car_id,
+        #     "user_id": user_id
+        # }
+        return jsonify(data=data)
+    errors={
+        'errors': 'Method Not Allowed'
+    }
+    return jsonify(errors=errors)
+
+
+
 
 @app.route('/api/users/<user_id>', methods=['GET'])
 def getuserdetails(user_id):

@@ -40,9 +40,6 @@ app.component('app-header', {
             <router-link class="nav-link" to="/logout">Logout<span class="sr-only">(current)</span></router-link>
             </li>
             <li class="nav-item active">
-            <router-link class="nav-link" to="/">Logout<span class="sr-only">(current)</span></router-link>
-            </li>
-            <li class="nav-item active">
             <router-link class="nav-link" @click="profile_page()" v-bind:to="'/users/' + userid">View Profile <span class="sr-only">(current)</span></router-link>
             </li>
       </ul>
@@ -64,7 +61,7 @@ app.component('app-header', {
     },
     mounted: function(){
         let self=this;
-        self.userid=JSON.parse(localStorage.getItem('id'));
+        self.userid=localStorage.getItem('id');
     }
 });
 
@@ -345,14 +342,13 @@ const register = {
 const explore = {
     name: 'explore',
     template: `
-    <body style="background-color:#f3f4f6;padding-top: 5rem; height: 100vh; margin: 0; ">
-        <div class="d-flex align-items-center justify-content-center h-100" style="margin-top:-320px;" >
+    <body style="background-color:#f3f4f6;padding-top: 5rem;  margin: 0; ">
+        <div class="d-flex align-items-center justify-content-center h-100" style="margin-top:90px;" >
             <div class="">
             <h2 class="font-weight-bold" style="font-size:40px;">Explore</h2>
             <br>
-            <form @submit.prevent="search" id="searchForm">
                 <div id = "message">
-                    <p class="alert alert-success" v-if="message === 'success'" >{{success}}</p>
+                    <p class="alert alert-success" v-if="message === 'success'" >Car/s Found!</p>
                     <ul class="alert alert-danger" v-if="message === 'error'" >
                         <li v-for="errors in errors" > {{errors}}</li>
                     </ul> 
@@ -361,46 +357,49 @@ const explore = {
                     <div class="card-body">
                     <div class="form-row ">
                     <div class="form-group col">
-                        <label  class="font-weight-bold" for="make2">Make</label>
-                        <input name="make2" id="make2" type="text" class="form-control " style="height:50px; width:350px; margin-right:20px; border-radius:10px;">
+                        <label  class="font-weight-bold" for="make">Make</label>
+                        <input name="make" v-model="makeSearch" id="make" type="text" class="form-control " style="height:50px; width:350px; margin-right:20px; border-radius:10px;">
                     </div>
                     <div class="form-group col">
-                        <label class="font-weight-bold" for="model2">Model</label>
-                        <input name="model2" type="text" class="form-control" style="height:50px; width:350px; margin-right:20px; border-radius:10px;">
+                        <label class="font-weight-bold" for="model">Model</label>
+                        <input name="model" type="text" v-model="modelSearch" class="form-control" style="height:50px; width:350px; margin-right:20px; border-radius:10px;">
                     </div>
                     <div class="form-group col " style="margin-top:30px;">
-                    <button type="submit"  style="height:50px; border-radius:10px;" class="btn btn-success w-100">Search</button>
+                    <button type="submit"  @click="search"  style="height:50px; border-radius:10px;" class="btn btn-success w-100">Search</button>
                     </div>
                 </div>
                     <br>
                     </div>
                 </div>
-            </form>
             </div>
          </div>
-         <div class="card-layout d-flex align-items-center  justify-content-center" style="margin-left:40px; margin-top:-290px;">
-            <div v-for="cars in cars.slice(-3)"  class="card mb-4 mr-4" style="width: 22rem;  border-radius:10px;">
-                <div class="h-100 w-100">
-                    <img v-bind:src="'/static/uploads/' + cars.photo" class="card-img-top" style="height: 15rem;" alt="Car Images"/>
-                </div>
-                <div class="card-body" style="height:12rem;">
-                    <div class="row">
-                        <h5 class="font-weight-bold card-title col">{{cars.year}} {{cars.make}}</h5> 
-                        <div >
-                            <span class="d-flex p-1 btn-success align-items-center justify-content-center" style="float:right;border-radius:10px; height:35px;" >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-tag mr-1" viewBox="0 0 16 16">
-                                <path d="M6 4.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm-1 0a.5.5 0 1 0-1 0 .5.5 0 0 0 1 0z"/>
-                                <path d="M2 1h4.586a1 1 0 0 1 .707.293l7 7a1 1 0 0 1 0 1.414l-4.586 4.586a1 1 0 0 1-1.414 0l-7-7A1 1 0 0 1 1 6.586V2a1 1 0 0 1 1-1zm0 5.586 7 7L13.586 9l-7-7H2v4.586z"/>
-                                </svg> 
-                                <span> {{"$"+Number(cars.price).toLocaleString() }}</span>
-                            </span>
-                        </div>
-                    </div>
-
-                    <p class="card-text" style="margin-top:-10px;color:#95989e;">{{cars.model}}</p><br><br>
-                    <button style="height:40px; border-radius:10px;" @click="$router.push({ name: 'carDetails', params: { car_id: cars.id } })" class="btn btn-success w-100">View more details</button>                
-                </div>
+         <div class="card-layout d-flex align-items-center  justify-content-center" style="margin-left:40px; margin-top:50px;">
+            <div id='carddd'>
+            <div v-for="cars in cars"  class="card mb-4 mr-4" style="width: 22rem;  border-radius:10px;">
+            <div class="h-100 w-100">
+                <img v-bind:src="'/static/uploads/' + cars.photo" class="card-img-top" style="height: 15rem;" alt="Car Images"/>
             </div>
+            <div class="card-body" style="height:12rem;">
+                <div class="row">
+                    <h5 class="font-weight-bold card-title col">{{cars.year}} {{cars.make}}</h5> 
+                    <div >
+                        <span class="d-flex p-1 btn-success align-items-center justify-content-center" style="float:right;border-radius:10px; height:35px;" >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-tag mr-1" viewBox="0 0 16 16">
+                            <path d="M6 4.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm-1 0a.5.5 0 1 0-1 0 .5.5 0 0 0 1 0z"/>
+                            <path d="M2 1h4.586a1 1 0 0 1 .707.293l7 7a1 1 0 0 1 0 1.414l-4.586 4.586a1 1 0 0 1-1.414 0l-7-7A1 1 0 0 1 1 6.586V2a1 1 0 0 1 1-1zm0 5.586 7 7L13.586 9l-7-7H2v4.586z"/>
+                            </svg> 
+                            <span> {{"$"+Number(cars.price).toLocaleString() }}</span>
+                        </span>
+                    </div>
+                </div>
+
+                <p class="card-text" style="margin-top:-10px;color:#95989e;">{{cars.model}}</p><br><br>
+                <button style="height:40px; border-radius:10px;" @click="$router.push({ name: 'carDetails', params: { car_id: cars.id } })" class="btn btn-success w-100">View more details</button>                
+            </div>
+        </div>
+            
+            </div>
+
         </div>    
     </body>
     `,
@@ -409,16 +408,17 @@ const explore = {
             message: '',
             errors: [],
             success:[],
-            cars:[]
+            cars:[],
+            makeSearch:'',
+            modelSearch:''
+          
         }
     },
     methods: {
         search: function(){
-            let searchForm= document.getElementById('searchForm');
             let router =this.$router;
-            let form_data=new FormData(searchForm);
             let self=this;
-            fetch("/api/search", {
+            fetch('/api/search?make='+self.makeSearch+'&'+'model='+self.modelSearch, {
                 method: "GET",
                 headers: {
                     'X-CSRFToken': token,
@@ -433,15 +433,15 @@ const explore = {
             .then(function (jsonResponse) {
                 if ('data' in jsonResponse ){
                     // self.success =  jsonResponse.message.message;
-                    // self.message = 'success';
-                   
+                    self.message = 'success';
+                
                     self.cars=jsonResponse.data
-                    console.log(jsonResponse.data)
-                    console.log( document.getElementById("make2").value)
+                    console.log(jsonResponse)
                 } else if ('errors' in jsonResponse ){
                     console.log(jsonResponse)
-                    // self.errors = jsonResponse.errors.errors;
-                    // self.message = 'error';
+                    self.cars=[]
+                    self.errors = jsonResponse.errors.errors;
+                    self.message = 'error';
                 }
             })
             .catch(function (error) {
@@ -525,6 +525,9 @@ const getCarDetails = {
                     </span>
                 </div>
           <br><br><br><br><br><br>
+          
+            <input id="toggle-heart" v-on:click="favorites(cars.id)"  type="checkbox" />
+            <label for="toggle-heart">❤</label>
           <button class="btn btn-success mt-4" type="submit">Email Owner</button>
         </div>
       </div>
@@ -575,8 +578,39 @@ const getCarDetails = {
         .catch(function (error) {
             console.log(error);
         });
-    }
+    },
+    methods:{
+        favorites(car_id){
+            let self=this;
+            fetch("/api/cars/"+car_id+"/favourite", {
+                method: "POST",
+                headers: {
+                    'X-CSRFToken': token,
+                    Authorization: 'Bearer ' + localStorage.getItem('token')
+                },
+                credentials: 'same-origin'
+            })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (jsonResponse) {
+                if ('data' in jsonResponse ){
+                    // self.success =  jsonResponse.message.message;
+                    self.message = 'success';
+                    console.log(jsonResponse)
+                } else if ('errors' in jsonResponse ){
+                    console.log(jsonResponse)
+                    self.errors = jsonResponse.errors.errors;
+                    self.message = 'error';
+                }
+            })
+            .catch(function (error) {
+                console.log(error);
+            });
+        }
+        
     
+    }
 };
 
 
@@ -722,11 +756,11 @@ const profile = {
                 <div class="card mb-3 pb-5" style="width: 900px;">
                     <div class="row no-gutters">
                         <div class="col-md-3 p-2 pt-4 pl-4 mr-3">
-                            <img v-bind:src="'/static/uploads/' + user.photo" class="card-img-top "style="border-radius:50%; width:200px;height:200px;" alt="User Images"/>
+                            <img v-bind:src="'/static/uploads/' + user.photo" class="card-img-top" style="border-radius:50%; width:200px;height:200px;" alt="User Images"/>
                         </div>
                         <div class="col-md-4">
                             <div class="card-body">
-                                <h2 class="card-title">{{user.name}}</h2>
+                                <h2 class="card-title font-weight-bold">{{user.name}}</h2>
                                 <p class="card-text font-weight-bold" style="color:#95989e; font-size:25px; margin-top:-10px;">@{{user.username}}</p>
                                 <p class="card-text" style="color:#95989e;">{{user.biography}}</p>
                                 <br>
@@ -764,7 +798,7 @@ const profile = {
     },
     mounted: function(){
         let router =this.$router;
-        let user_id = this.$route.params.user_id;
+        let user_id =localStorage.getItem('id') ;
         let self=this;
 
         fetch("/api/users/"+user_id, {

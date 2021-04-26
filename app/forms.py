@@ -28,7 +28,3 @@ class carForm(FlaskForm):
     transmission = SelectField('Transmission', choices=[('Automatic'), ('Manual')])
     description = TextAreaField('Description', validators=[DataRequired()], description='Please enter a short description.')
     photo = FileField('Photo', validators=[FileRequired(), FileAllowed(['jpg', 'png', 'Photos only!'])])
-
-class searchForm(FlaskForm):
-    make2 = StringField('Make', validators=[InputRequired()], description="Please enter make.")
-    model2 = PasswordField('Model', validators=[InputRequired()], description="Please enter vechile's model.")
