@@ -116,8 +116,8 @@ const Home = {
 const login = {
     name: 'loginForm',
     template: `
-    <body style="background-color:#f3f4f6;padding-top: 5rem; height: 100vh; margin: 0; ">
-        <div class="d-flex align-items-center justify-content-center h-100" style="margin-top:-120px;" >
+    <body style="background-color:#f3f4f6;padding-top: 5rem; margin-top: 0; ">
+        <div class="d-flex align-items-center justify-content-center h-100"  style="padding-bottom:20rem; margin-top:200px;" >
             <div class="">
             <h2 class="font-weight-bold text-center" >Login to your account</h2>
             <br>
@@ -243,8 +243,8 @@ const logout = {
 const register = {
     name: 'registerForm',
     template: `
-    <body style="background-color:#f3f4f6;padding-top: 6rem; height: 100vh; ">
-        <div class="d-flex align-items-center justify-content-center h-100" style="margin-top:0px;" >
+    <body style="background-color:#f3f4f6;padding-top: 6rem; ">
+        <div class="d-flex align-items-center justify-content-center h-100" style="padding-bottom:20rem; margin-top:0px;" >
             <div class="">
                 <h2 class="font-weight-bold " >Register New User</h2>
                 <br>
