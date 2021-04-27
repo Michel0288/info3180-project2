@@ -13,7 +13,7 @@ import jwt
 import psycopg2
 from sqlalchemy.sql.expression import desc 
 from app import app, db, login_manager
-from flask import request, jsonify, render_template,g
+from flask import request, jsonify, render_template,g,send_from_directory
 from flask_login import login_user, logout_user, current_user, login_required
 from app.forms import  LoginForm, RegisterForm,carForm
 from app.models import Users,Cars,Favourites
@@ -60,8 +60,6 @@ def requires_auth(f):
 
 @app.route('/api/register', methods = ['POST'])
 def register():
-    # maxid=session.query(func.max(Users.id)).scalar()
-    # print(maxid)
     form = RegisterForm()
     if form.validate_on_submit() and request.method=="POST":
         username = form.username.data
@@ -81,8 +79,6 @@ def register():
         db.session.commit()
 
         message = {
-            #fix id part
-            "id":1,
             "username": username,
             "name": name,
             "photo": filename,
@@ -103,8 +99,6 @@ def register():
 @requires_auth
 @login_required
 def addcars():
-    # maxid=session.query(func.max(Users.id)).scalar()
-    # print(maxid)
     form = carForm()
     if form.validate_on_submit() and request.method=="POST":
         make = form.make.data
@@ -125,7 +119,6 @@ def addcars():
         db.session.commit()
 
         message = {
-            #fix id part
             "user_id":current_user.id,
             "make": make,
             "model": model,
@@ -136,7 +129,6 @@ def addcars():
             "year": year,
             "colour":colour,
             'transmission':transmission,
-            # "id":1
         }
         
         return jsonify(message=message)
@@ -153,7 +145,7 @@ def addcars():
 @login_required
 def returncars():
     if request.method=="GET":
-        allcars=Cars.query.order_by(desc(Cars.id)).all()
+        allcars=Cars.query.order_by(desc(Cars.id)).limit(3).all()
         data=[]
         for i in allcars:
             data.append({
@@ -166,7 +158,7 @@ def returncars():
                 'transmission':i.transmission,
                 'car_type':i.car_type,
                 'price':i.price,
-                'photo':i.photo,
+                'photo':"/uploads/"+i.photo,
                 'user_id':i.user_id
             })
         return jsonify(data=data)
@@ -208,7 +200,7 @@ def search():
                     'transmission':i.transmission,
                     'car_type':i.car_type,
                     'price':i.price,
-                    'photo':i.photo,
+                    'photo':"/uploads/"+i.photo,
                     'user_id':i.user_id
                 })
 
@@ -216,6 +208,8 @@ def search():
 
 
 @app.route('/api/cars/<car_id>', methods=['GET'])
+@requires_auth
+@login_required
 def getcardetails(car_id):
     if request.method == 'GET':
         cardata = db.session.query(Cars).filter_by(id=car_id).first()
@@ -229,7 +223,7 @@ def getcardetails(car_id):
             'transmission':cardata.transmission,
             'car_type':cardata.car_type,
             'price':cardata.price,
-            'photo':cardata.photo,
+            'photo':"/uploads/"+cardata.photo,
             'user_id':cardata.user_id
         }
         return jsonify(data=data)
@@ -241,41 +235,67 @@ def getcardetails(car_id):
 
 
 @app.route('/api/cars/<car_id>/favourite', methods=['POST'])
+@requires_auth
+@login_required
 def favorites(car_id):
-    if request.method == 'POST':
-        userid = current_user.id
-        fav_car = Favourites(car_id, userid) 
-        print(user_id)
-        print(car_id)
-        # cardata = db.session.query(Favourites).filter_by(user_id=32).first()
-        cardata=Favourites.query.filter(user_id=userid,car_id=car_id).all()
+    user_id = current_user.id
+    query=db.session.query(Favourites).filter( Favourites.car_id==car_id,Favourites.user_id==user_id).all()
 
-        # query=db.session.query(Favourites).filter(Favourites.user_id==user_id, Favourites.car_id==car_id).all()
-        print(cardata)
-        # db.session.add(fav_car) 
-        # db.session.commit()
-        data=[]
-        for i in cardata:
-            data.append({
-                    'id':i.user_id,
-                    'carid':i.car_id,
-                })
-
-
-        # data={
-        #     "car_id": car_id,
-        #     "user_id": user_id
-        # }
+    if not query and request.method == 'POST':
+        fav_car = Favourites(user_id,car_id) 
+        db.session.add(fav_car) 
+        db.session.commit()
+        data={
+            "car_id": car_id,
+            "user_id": user_id
+        }
         return jsonify(data=data)
     errors={
-        'errors': 'Method Not Allowed'
+        'errors': ['Car is already a favourite!']
     }
     return jsonify(errors=errors)
 
 
+@app.route('/api/users/<user_id>/favourites', methods=['GET'])
+@requires_auth
+@login_required
+def userfavorites(user_id):
+    if request.method == 'GET':
+        query= db.session.query(Favourites).filter_by(user_id=user_id).all()
+        if query==[] or query ==None:
+            errors={
+            'errors': ['You have no favorite cars!']
+            }
+            return jsonify(errors=errors)
+        else:
+            data=[]
+            for i in query:
+                favlist = db.session.query(Cars).filter(Cars.id==i.car_id).first()
+                data.append({
+                    'id':favlist.id,
+                    'description':favlist.description,
+                    'year':favlist.year,
+                    'make':favlist.make,
+                    'model':favlist.model,
+                    'colour':favlist.colour,
+                    'transmission':favlist.transmission,
+                    'car_type':favlist.car_type,
+                    'price':favlist.price,
+                    'photo':"/uploads/"+favlist.photo,
+                    'user_id':favlist.user_id
+                })
+
+        return jsonify(data=data)
+    errors={
+            'errors': ['Invalid Method!']
+            }
+    return jsonify(errors=errors)
+
 
 
 @app.route('/api/users/<user_id>', methods=['GET'])
+@requires_auth
+@login_required
 def getuserdetails(user_id):
     if request.method == 'GET':
         userdata = db.session.query(Users).filter_by(id=user_id).first()
@@ -283,7 +303,7 @@ def getuserdetails(user_id):
             'id':userdata.id,
             'username':userdata.username,
             'name':userdata.name,
-            'photo':userdata.photo,
+            'photo':"/uploads/"+userdata.photo,
             'email':userdata.email,
             'location':userdata.location,
             'biography':userdata.biography,
@@ -333,7 +353,6 @@ def login():
 
 
 @app.route('/api/auth/logout', methods=['GET'])
-@login_required
 def logout():
     logout_user()
     message = {
@@ -358,6 +377,12 @@ def index(path):
 
 # Here we define a function to collect form errors from Flask-WTF
 # which we can later use
+
+@app.route('/uploads/<filename>')
+def get_image(filename):
+    rootdir = os.getcwd()
+    return send_from_directory(os.path.join(rootdir,app.config['UPLOAD_FOLDER']),filename)
+
 def form_errors(form):
     error_messages = []
     """Collects form errors"""

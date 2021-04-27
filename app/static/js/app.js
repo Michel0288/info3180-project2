@@ -18,29 +18,29 @@ app.component('app-header', {
       </button>
       <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav mr-auto">
+
           <li class="nav-item active">
-            <router-link class="nav-link" to="/">Home <span class="sr-only">(current)</span></router-link>
+          <li class="nav-item active">
+          <router-link class="nav-link" v-if="!link_status" to="/" >Home <span class="sr-only">(current)</span></router-link>
+          </li>
+          <router-link class="nav-link " style="margin-left:200px;" v-if="link_status" to="/cars/new">Add Car <span class="sr-only">(current)</span></router-link>
+          </li>
+          <li class="nav-item active">
+          <router-link class="nav-link ml-4" v-if="link_status" to="/explore">Explore <span class="sr-only">(current)</span></router-link>
+          </li>
+          <li class="nav-item active">
+          <router-link class="nav-link ml-4" v-if="link_status" @click="profile_page()" v-bind:to="'/users/' + userid">My Profile <span class="sr-only">(current)</span></router-link>
           </li>
         </ul>
         <ul class="navbar-nav">
             <li class="nav-item active">
-            <router-link class="nav-link" to="/register">Register <span class="sr-only">(current)</span></router-link>
+            <router-link class="nav-link"  v-if="!link_status" to="/register">Register <span class="sr-only">(current)</span></router-link>
             </li>
             <li class="nav-item active">
-            <router-link class="nav-link" to="/login">Login <span class="sr-only">(current)</span></router-link>
-            </li>
-
-            <li class="nav-item active">
-            <router-link class="nav-link" to="/explore">Explore <span class="sr-only">(current)</span></router-link>
+            <router-link class="nav-link"  v-if="!link_status" to="/login">Login <span class="sr-only">(current)</span></router-link>
             </li>
             <li class="nav-item active">
-            <router-link class="nav-link" to="/cars/new">Add Car <span class="sr-only">(current)</span></router-link>
-            </li>
-            <li class="nav-item active">
-            <router-link class="nav-link" to="/logout">Logout<span class="sr-only">(current)</span></router-link>
-            </li>
-            <li class="nav-item active">
-            <router-link class="nav-link" @click="profile_page()" v-bind:to="'/users/' + userid">View Profile <span class="sr-only">(current)</span></router-link>
+            <router-link class="nav-link" v-if="link_status" to="/logout">Logout<span class="sr-only">(current)</span></router-link>
             </li>
       </ul>
       </div>
@@ -48,20 +48,26 @@ app.component('app-header', {
     `, 
     data: function(){
         return {
-            userid: 0
+            userid: 0,
+            link_status:false
         }
     },
     methods:{
         profile_page(){
-            // let router = this.$router; 
-            // let user = JSON.parse(localStorage.getItem('id'));
-            // router.push(`/users/${user.id}`);
             location.reload();
         }
     },
     mounted: function(){
         let self=this;
         self.userid=localStorage.getItem('id');
+        setInterval(()=>{
+            if(localStorage.hasOwnProperty('token')){
+                this.link_status=true;
+            }
+            else{
+                this.link_status=false;
+            }
+        },1)
     }
 });
 
@@ -91,8 +97,8 @@ const Home = {
                     <h1 class="font-weight-bold" style="font-size:50px;">Buy and Sell Cars Online</h1>
                     <br>
                     <p  style="font-size:17px;">United Auto Sales provides the fastest, easiest and most user friendly way to buy or sell cars online. Find a Great Price on the Vehicle You Want.</p>
-                    <button style="width:150px;" type="button" class="btn btn-primary btn-lg rounded">Register</button>
-                    <button style="width:150px; margin-left :15px" type="button" class="btn btn-info btn-lg rounded">Login</button>
+                    <router-link style="width:150px;" type="button" class="btn btn-primary btn-lg rounded" to="/register">Register<span class="sr-only">(current)</span></router-link>
+                    <router-link style="width:150px; margin-left :15px" type="button" class="btn btn-info btn-lg rounded" to="/login">Login<span class="sr-only">(current)</span></router-link>
                 </div>
             </div>
             <div class="col">
@@ -342,7 +348,7 @@ const register = {
 const explore = {
     name: 'explore',
     template: `
-    <body style="background-color:#f3f4f6;padding-top: 5rem;  margin: 0; ">
+    <body style="background-color:#f3f4f6;padding-top: 5rem; padding-bottom:10rem; margin: 0; " >
         <div class="d-flex align-items-center justify-content-center h-100" style="margin-top:90px;" >
             <div class="">
             <h2 class="font-weight-bold" style="font-size:40px;">Explore</h2>
@@ -377,7 +383,7 @@ const explore = {
             <div id='carddd'>
             <div v-for="cars in cars"  class="card mb-4 mr-4" style="width: 22rem;  border-radius:10px;">
             <div class="h-100 w-100">
-                <img v-bind:src="'/static/uploads/' + cars.photo" class="card-img-top" style="height: 15rem;" alt="Car Images"/>
+                <img v-bind:src="cars.photo" class="card-img-top" style="height: 15rem;" alt="Car Images"/>
             </div>
             <div class="card-body" style="height:12rem;">
                 <div class="row">
@@ -394,7 +400,7 @@ const explore = {
                 </div>
 
                 <p class="card-text" style="margin-top:-10px;color:#95989e;">{{cars.model}}</p><br><br>
-                <button style="height:40px; border-radius:10px;" @click="$router.push({ name: 'carDetails', params: { car_id: cars.id } })" class="btn btn-success w-100">View more details</button>                
+                <button style="height:40px; border-radius:10px;" @click="$router.push({ name: 'carDetails', params: { car_id: cars.id } })" class="btn btn-success w-100 mb-2">View more details</button>                
             </div>
         </div>
             
@@ -428,6 +434,9 @@ const explore = {
                 credentials: 'same-origin'
             })
             .then(function (response) {
+                if(response.status==401){
+                    router.push('/error')
+                }
                 return response.json();
             })
             .then(function (jsonResponse) {
@@ -451,6 +460,7 @@ const explore = {
 
     },
     mounted: function(){
+        let router =this.$router;
         let self=this;
         fetch("/api/cars", {
             method: "GET",
@@ -462,6 +472,9 @@ const explore = {
             credentials: 'same-origin'
         })
         .then(function (response) {
+            if(response.status==401){
+                router.push('/error')
+            }
             return response.json();
         })
         .then(function (jsonResponse) {
@@ -483,17 +496,22 @@ const explore = {
 };
 
 
-
 const getCarDetails = {
     name: 'carDetials',
     template: `
     <body style="background-color:#f3f4f6;padding-top: 6rem; height: 100vh; ">
-    <div class="d-flex align-items-center justify-content-center h-100" style="margin-top:-120px;">
+    <div class="d-flex align-items-center justify-content-center h-100" style="flex-direction: column; margin-top:-120px;">
+            <div id = "message" style="width:1000px;" >
+            <p class="alert alert-success" v-if="message === 'success'" >Car added to favourites!</p>
+            <ul class="alert alert-danger" v-if="message === 'error'" >
+                <li v-for="errors in errors" > {{errors}}</li>
+            </ul> 
+            </div>
         <div style="width: 1700px;">
-            <div class="" style="margin-top:100px;" >
+            <div class="" style="margin-top:0px;" >
                 <div class="row g-0 no-gutters justify-content-center ">
                 <div class="col-md-3  rounded" >
-                    <img v-bind:src="'/static/uploads/' + cars.photo" class="card-img-top h-100" alt="Car Images"/>
+                    <img v-bind:src="cars.photo" class="card-img-top h-100" alt="Car Images"/>
                 </div>
                 <div class="col-md-4 pr-3 bg-white  rounded" >
                     <div class="card-body ">
@@ -524,11 +542,16 @@ const getCarDetails = {
                         <p class="font-weight-bold">{{cars.transmission}}</p>
                     </span>
                 </div>
-          <br><br><br><br><br><br>
-          
-            <input id="toggle-heart" v-on:click="favorites(cars.id)"  type="checkbox" />
-            <label for="toggle-heart">❤</label>
-          <button class="btn btn-success mt-4" type="submit">Email Owner</button>
+                <br><br><br><br><br><br>
+                <div class="row">
+                <span class="d-flex col">
+                    <button class="btn btn-success mt-4" style="height:40px;" type="submit">Email Owner</button>
+                </span>
+                <span class="d-flex col">
+                    <input id="toggle-heart" class="mr-5 mt-4" v-on:click="favorites(cars.id)"  type="checkbox" /> 
+                    <label style="margin-left:300px; " class="mt-4" for="toggle-heart">❤</label>
+                </span>
+                </div>
         </div>
       </div>
     </div>
@@ -561,6 +584,9 @@ const getCarDetails = {
             credentials: 'same-origin'
         })
         .then(function (response) {
+            if(response.status==401){
+                router.push('/error')
+            }
             return response.json();
         })
         .then(function (jsonResponse) {
@@ -581,6 +607,7 @@ const getCarDetails = {
     },
     methods:{
         favorites(car_id){
+            let router =this.$router;
             let self=this;
             fetch("/api/cars/"+car_id+"/favourite", {
                 method: "POST",
@@ -591,6 +618,9 @@ const getCarDetails = {
                 credentials: 'same-origin'
             })
             .then(function (response) {
+                if(response.status==401){
+                    router.push('/error')
+                }
                 return response.json();
             })
             .then(function (jsonResponse) {
@@ -617,14 +647,14 @@ const getCarDetails = {
 const addcars = {
     name: 'carForm',
     template: `
-    <body style="background-color:#f3f4f6;padding-top: 6rem; height: 100vh; ">
-        <div class="d-flex align-items-center justify-content-center h-100" style="margin-top:0px;" >
+    <body style="background-color:#f3f4f6;padding-top: 6rem;  ">
+        <div class="d-flex align-items-center justify-content-center h-100" style="margin-top:50px;" >
             <div class="">
                 <h2 class="font-weight-bold " >Add New Car</h2>
                 <br>
                 <form @submit.prevent="registerCar" id="carForm">
                 <div id = "message">
-                    <p class="alert alert-success" v-if="message === 'success'" >{{success}}</p>
+                    <p class="alert alert-success" v-if="message === 'success'" >Car Successfully Added!</p>
                     <ul class="alert alert-danger" v-if="message === 'error'" >
                         <li v-for="errors in errors" > {{errors}}</li>
                     </ul> 
@@ -726,12 +756,18 @@ const addcars = {
                 credentials: 'same-origin'
             })
             .then(function (response) {
+                if(response.status==401){
+                    router.push('/error')
+                }
                 return response.json();
             })
             .then(function (jsonResponse) {
                 if ('message' in jsonResponse ){
                     self.success =  jsonResponse.message.message;
                     self.message = 'success';
+                    setTimeout(() => {
+                        router.push('/explore')
+                    }, 2500); 
 
                     console.log(jsonResponse)
                 } else if ('errors' in jsonResponse ){
@@ -750,20 +786,20 @@ const addcars = {
 const profile = {
     name: 'profile',
     template: `
-    <body style="background-color:#f3f4f6;padding-top: 6rem; height: 100vh; ">
-        <div class="d-flex align-items-center justify-content-center h-100" style="margin-top:-220px;" >
+    <body style="background-color:#f3f4f6;padding-top: 6rem; margin-top:0px; padding-bottom:10rem;">
+        <div class="d-flex align-items-center justify-content-center" style="margin-top:-240px;" >
             <div>
-                <div class="card mb-3 pb-5" style="width: 900px;">
+                <div class="card mb-3 pb-2" style="width: 900px; margin-top:270px;">
                     <div class="row no-gutters">
                         <div class="col-md-3 p-2 pt-4 pl-4 mr-3">
-                            <img v-bind:src="'/static/uploads/' + user.photo" class="card-img-top" style="border-radius:50%; width:200px;height:200px;" alt="User Images"/>
+                            <img v-bind:src="user.photo" class="card-img-top" style="border-radius:50%; width:200px;height:200px;" alt="User Images"/>
                         </div>
                         <div class="col-md-4">
                             <div class="card-body">
                                 <h2 class="card-title font-weight-bold">{{user.name}}</h2>
                                 <p class="card-text font-weight-bold" style="color:#95989e; font-size:25px; margin-top:-10px;">@{{user.username}}</p>
                                 <p class="card-text" style="color:#95989e;">{{user.biography}}</p>
-                                <br>
+                            
                                 <div class="row">
                                     <span class="d-flex col">
                                         <p class="mr-5" style="color:#95989e;">Email </p>
@@ -784,6 +820,37 @@ const profile = {
                 </div>
             </div>
         </div>
+        <h2 class="font-weight-bold d-flex align-items-center  justify-content-center" style="margin-right:720px;">Cars Favourited</h2>
+        <div class="card-layout d-flex align-items-center  justify-content-center" style="margin-left:40px; margin-top:0px;">
+        <div id='carddd'>
+        <div v-for="cars in cars"  class="card mb-4 mr-4" style="width: 19rem;  border-radius:10px;">
+        <div class="h-100 w-100">
+            <img v-bind:src="cars.photo" class="card-img-top" style="height: 15rem;" alt="Car Images"/>
+        </div>
+        <div class="card-body" style="height:12rem;">
+            <div class="row">
+                <h6 class="font-weight-bold card-title col">{{cars.year}} {{cars.make}}</h6> 
+                <div >
+                    <span class="d-flex p-1 btn-success align-items-center justify-content-center" style="float:right;border-radius:10px; height:35px;" >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-tag mr-1" viewBox="0 0 16 16">
+                        <path d="M6 4.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm-1 0a.5.5 0 1 0-1 0 .5.5 0 0 0 1 0z"/>
+                        <path d="M2 1h4.586a1 1 0 0 1 .707.293l7 7a1 1 0 0 1 0 1.414l-4.586 4.586a1 1 0 0 1-1.414 0l-7-7A1 1 0 0 1 1 6.586V2a1 1 0 0 1 1-1zm0 5.586 7 7L13.586 9l-7-7H2v4.586z"/>
+                        </svg> 
+                        <span> {{"$"+Number(cars.price).toLocaleString() }}</span>
+                    </span>
+                </div>
+            </div>
+
+            <p class="card-text" style="margin-top:-10px;color:#95989e;">{{cars.model}}</p><br><br>
+            <button style="height:40px; border-radius:10px;" @click="$router.push({ name: 'carDetails', params: { car_id: cars.id } })" class="btn btn-success w-100">View more details</button>                
+        </div>
+    </div>
+        
+        </div>
+
+    </div>    
+
+
     </body>
 
     `,
@@ -792,15 +859,51 @@ const profile = {
             message: '',
             errors: [],
             user:[],
-            success:[]
+            success:[],
+            cars:[]
            
         }
+    },
+    created: function(){
+            let router =this.$router;
+            let user_id = JSON.parse(localStorage.getItem('id'));
+            let self=this;
+
+        
+            fetch("/api/users/"+user_id+"/favourites", {
+                method: "GET",
+                headers: {
+                    'X-CSRFToken': token,
+                    Authorization: 'Bearer ' + localStorage.getItem('token')
+                },
+                credentials: 'same-origin'
+            })
+            .then(function (response) {
+                if(response.status==401){
+                    router.push('/error')
+                }
+                return response.json();
+            })
+            .then(function (jsonResponse) {
+                if ('data' in jsonResponse ){
+                    // self.success =  jsonResponse.message.message;
+                    // self.message = 'success';
+                    self.cars=jsonResponse.data
+                    console.log(jsonResponse)
+                } else if ('errors' in jsonResponse ){
+                    console.log(jsonResponse)
+                    // self.errors = jsonResponse.errors.errors;
+                    // self.message = 'error';
+                }
+            })
+            .catch(function (error) {
+                console.log(error);
+            });
     },
     mounted: function(){
         let router =this.$router;
         let user_id =localStorage.getItem('id') ;
         let self=this;
-
         fetch("/api/users/"+user_id, {
             method: "GET",
             headers: {
@@ -810,7 +913,12 @@ const profile = {
             credentials: 'same-origin'
         })
         .then(function (response) {
+            if(response.status==401){
+                router.push('/error')
+            }
+            
             return response.json();
+
         })
         .then(function (jsonResponse) {
             if ('data' in jsonResponse ){
@@ -843,6 +951,25 @@ const NotFound = {
     }
 };
 
+const error = {
+    name: 'error',
+    template: `
+    <h1 class="" style="text-align:center; font-size:64px; margin:75px 0 20px; color:#D15C95">HOLD UP!</h1>
+    <h2 class="" style="text-align:center; font-size:64px; color:#F0E395">ERROR:</h2>
+    <section class="error-container" style="">
+        <span><span>4</span></span>
+        <span>0</span>
+        <span><span>1</span></span>
+    </section>
+    <h2 class="mt-5" style="text-align:center; font-size:64px; color:#FFB485">UNAUTHORIZED!</h2>
+    <h2 class="" style="text-align:center; font-size:24px; color:#F0E395">ERROR WITH JWT TOKEN</h2>
+    <router-link class="" style="margin-left:720px;" to="/logout">Please logout and login to continue!<span class="sr-only">(current)</span></router-link>
+    `,
+    data() {
+        return {}
+    }
+};
+
 // Define Routes
 const routes = [
     { path: "/", component: Home },
@@ -856,6 +983,8 @@ const routes = [
     { path: "/users/:user_id",name:'profile', component: profile },
 
     { path: "/explore", component: explore },
+
+    { path: "/error", component: error },
 
     { path: "/cars/new", component: addcars },
 
