@@ -246,8 +246,8 @@ def favorites(car_id):
         db.session.add(fav_car) 
         db.session.commit()
         data={
-            "car_id": car_id,
-            "user_id": user_id
+            'message': "Car Successfully Favourited",
+            "car_id": car_id
         }
         return jsonify(data=data)
     errors={

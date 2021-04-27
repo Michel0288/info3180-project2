@@ -502,7 +502,7 @@ const getCarDetails = {
     <body style="background-color:#f3f4f6;padding-top: 6rem; height: 100vh; ">
     <div class="d-flex align-items-center justify-content-center h-100" style="flex-direction: column; margin-top:-120px;">
             <div id = "message" style="width:1000px;" >
-            <p class="alert alert-success" v-if="message === 'success'" >Car added to favourites!</p>
+            <p class="alert alert-success" v-if="message === 'success'" >{{success}}</p>
             <ul class="alert alert-danger" v-if="message === 'error'" >
                 <li v-for="errors in errors" > {{errors}}</li>
             </ul> 
@@ -625,7 +625,7 @@ const getCarDetails = {
             })
             .then(function (jsonResponse) {
                 if ('data' in jsonResponse ){
-                    // self.success =  jsonResponse.message.message;
+                    self.success =  jsonResponse.data.message;
                     self.message = 'success';
                     console.log(jsonResponse)
                 } else if ('errors' in jsonResponse ){
