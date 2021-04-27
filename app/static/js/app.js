@@ -330,7 +330,9 @@ const register = {
                 if ('message' in jsonResponse ){
                     self.success = 'Registration Succesful!';
                     self.message = 'success';
-                    router.push('login')
+                    setTimeout(() => {
+                        router.push('/login')
+                    }, 1500); 
                     console.log(jsonResponse)
                 } else if ('errors' in jsonResponse ){
                     console.log(jsonResponse)
@@ -767,7 +769,7 @@ const addcars = {
                     self.message = 'success';
                     setTimeout(() => {
                         router.push('/explore')
-                    }, 2500); 
+                    }, 1500); 
 
                     console.log(jsonResponse)
                 } else if ('errors' in jsonResponse ){
